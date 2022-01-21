@@ -1,48 +1,36 @@
+use std::rc::Rc;
 
-fn is_copy<T: Copy>() {}
-
-fn types_impl_copy_trait() {
-    is_copy::<bool>();
-    is_copy::<char>();
-
-    // all iXX and uXX, usize/isize, fXX implement Copy trait
-    is_copy::<i8>();
-    is_copy::<u64>();
-    is_copy::<i64>();
-    is_copy::<usize>();
-
-    // function (actually a pointer) is Copy
-    is_copy::<fn()>();
-
-    // raw pointer is Copy
-    is_copy::<*const String>();
-    is_copy::<*mut String>();
-
-    // immutable reference is Copy
-    is_copy::<&[Vec<u8>]>();
-    is_copy::<&String>();
-
-    // array/tuple with values which is Copy is Copy
-    is_copy::<[u8; 4]>();
-    is_copy::<(&str, &str)>();
+#[derive(Debug)]
+struct Node {
+    id: usize,
+    downstream: Option<Rc<Node>>,
 }
 
-fn types_not_impl_copy_trait() {
-    // unsized or dynamic sized type is not Copy
-    is_copy::<str>();
-    is_copy::<[u8]>();
-    is_copy::<Vec<u8>>();
-    is_copy::<String>();
+impl Node {
+    pub fn new(id: usize) -> Node {
+        Node {
+            id,
+            downstream: None,
+        }
+    }
 
-    // mutable reference is not Copy
-    is_copy::<&mut String>();
+    fn update_downstream(&mut self, downstream: Rc<Node>) {
+        self.downstream = Some(downstream);
+    }
 
-    // array / tuple with values that not Copy is not Copy
-    is_copy::<[Vec<u8>; 4]>();
-    is_copy::<(String, u32)>();
+    pub fn get_downstream(&self) -> Option<Rc<Node>> {
+        self.downstream.as_ref().map(|node| node.clone())
+    }
 }
 
 fn main() {
-    types_impl_copy_trait();
-    types_not_impl_copy_trait();
+    let mut node1 = Node::new(1);
+    let mut node2 = Node::new(2);
+    let mut node3 = Node::new(3);
+    let node4 = Node::new(4);
+    node3.update_downstream(Rc::new(node4));
+
+    node1.update_downstream(Rc::new(node3));
+    node2.update_downstream(node1.get_downstream().unwrap());
+    println!("node1: {:?}, node: {:?}", node1, node2);
 }
