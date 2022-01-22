@@ -1,9 +1,10 @@
+use std::cell::RefCell;
 use std::rc::Rc;
 
 #[derive(Debug)]
 struct Node {
     id: usize,
-    downstream: Option<Rc<Node>>,
+    downstream: Option<Rc<RefCell<Node>>>,
 }
 
 impl Node {
@@ -14,11 +15,11 @@ impl Node {
         }
     }
 
-    fn update_downstream(&mut self, downstream: Rc<Node>) {
+    fn update_downstream(&mut self, downstream: Rc<RefCell<Node>>) {
         self.downstream = Some(downstream);
     }
 
-    pub fn get_downstream(&self) -> Option<Rc<Node>> {
+    pub fn get_downstream(&self) -> Option<Rc<RefCell<Node>>> {
         self.downstream.as_ref().map(|node| node.clone())
     }
 }
@@ -28,9 +29,15 @@ fn main() {
     let mut node2 = Node::new(2);
     let mut node3 = Node::new(3);
     let node4 = Node::new(4);
-    node3.update_downstream(Rc::new(node4));
+    node3.update_downstream(Rc::new(RefCell::new(node4)));
 
-    node1.update_downstream(Rc::new(node3));
+    node1.update_downstream(Rc::new(RefCell::new(node3)));
     node2.update_downstream(node1.get_downstream().unwrap());
     println!("node1: {:?}, node: {:?}", node1, node2);
+
+    let node5 = Node::new(5);
+    let node3 = node1.get_downstream().unwrap();
+    node3.borrow_mut().downstream = Some(Rc::new(RefCell::new(node5)));
+
+    println!("node1: {:?}, node2: {:?}", node1, node2);
 }
